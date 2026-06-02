@@ -1,3 +1,12 @@
+---
+title: Kasandra Bot
+emoji: 🤖
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+---
+
 # 🤖 Kasandra - Discord AI Chatbot
 
 Welcome to **Kasandra**—a sharp, witty, and highly intelligent AI companion for Discord! Kasandra can chat, debate, and discuss any topic inside text channels and Direct Messages (DMs). She remembers recent conversation history, automatically adapts to your style (slang, Hinglish, Spanish, gibberish), and runs entirely on message events without requiring slash commands.
