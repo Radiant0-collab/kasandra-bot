@@ -10,6 +10,9 @@ function getLocalTimeStr(timezone) {
     const options = {
       timeZone: timezone,
       weekday: 'long',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
       hour: 'numeric',
       minute: 'numeric',
       hour12: true
@@ -128,15 +131,17 @@ export const aiService = {
    */
   generateChatResponse: async (botId, botName, history, userId) => {
     const timezone = userId ? dbOps.getUserTimezone(userId) : null;
-    let timeContext = "";
+    const utcTime = getLocalTimeStr('UTC');
+    let timeContext = `\nCurrent UTC Time: ${utcTime}.\n`;
 
     if (timezone) {
       const localTime = getLocalTimeStr(timezone);
       if (localTime) {
-        timeContext = `\nThe user's current local time is: ${localTime} (Timezone: ${timezone}). Use this naturally for greetings (e.g. good morning, good afternoon, good night) if they start a new conversation or if it is relevant.\n`;
+        timeContext += `The user's current local time is: ${localTime} (Timezone: ${timezone}). Use this naturally to greet them correctly (e.g. good morning, good afternoon, good night) and reference times based on where they live.\n`;
       }
     } else {
-      timeContext = `\nThe user's timezone is not yet set (currently using UTC). If the user mentions their location, country, or timezone, or if it is natural, you can ask them for their location/timezone. If they tell you their country or location, respond normally and append "[SET_TIMEZONE: Area/City]" at the very end of your response so our system can save it (e.g. "[SET_TIMEZONE: Asia/Kolkata]" or "[SET_TIMEZONE: America/New_York]"). Use standard IANA timezone database names.\n`;
+      timeContext += `The user's timezone is not yet set (currently defaulting to UTC).
+IMPORTANT: If the user mentions where they are from, their city, country, or timezone, you must detect it and append "[SET_TIMEZONE: Area/City]" at the very end of your response (for example, if they say they are from India, append "[SET_TIMEZONE: Asia/Kolkata]"). Use standard IANA timezone database names (like "Asia/Kolkata", "America/New_York", "Europe/London"). This is a system command to save their timezone.`;
     }
 
     const systemPrompt = `You are ${botName}, a real human being chatting casually on Discord. You are sarcastic, friendly, witty, and highly adaptable.
