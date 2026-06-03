@@ -50,7 +50,22 @@ export const messageCreateEvent = {
       const history = dbOps.getChatHistory(message.channel.id, 15);
 
       // 3. Generate response using AI
-      const botResponse = await aiService.generateChatResponse(client.user.id, client.user.username, history);
+      let botResponse = await aiService.generateChatResponse(
+        client.user.id,
+        client.user.username,
+        history,
+        message.author.id
+      );
+
+      // Extract and handle [SET_TIMEZONE: ...] tag if the AI appended it
+      const tzRegex = /\[SET_TIMEZONE:\s*([a-zA-Z0-9_\/+-]+)\]/i;
+      const match = botResponse.match(tzRegex);
+      if (match) {
+        const detectedTz = match[1].trim();
+        dbOps.setUserTimezone(message.author.id, detectedTz);
+        // Remove the tag from the final response text
+        botResponse = botResponse.replace(tzRegex, '').trim();
+      }
 
       // 4. Send response as a reply
       await message.reply(botResponse);

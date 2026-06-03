@@ -1,5 +1,26 @@
 import dotenv from 'dotenv';
+import { dbOps } from './database.js';
 dotenv.config();
+
+/**
+ * Helper to get the formatted local time string for a given timezone.
+ */
+function getLocalTimeStr(timezone) {
+  try {
+    const options = {
+      timeZone: timezone,
+      weekday: 'long',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true
+    };
+    const formatter = new Intl.DateTimeFormat('en-US', options);
+    return formatter.format(new Date());
+  } catch (error) {
+    console.error("Error formatting time for timezone:", timezone, error);
+    return null;
+  }
+}
 
 const provider = process.env.LLM_PROVIDER || 'gemini';
 const geminiKey = process.env.GEMINI_API_KEY;
@@ -105,9 +126,21 @@ export const aiService = {
   /**
    * Generates a conversational response for Kasandra based on chat history.
    */
-  generateChatResponse: async (botId, botName, history) => {
-    const systemPrompt = `You are ${botName}, a real human being chatting casually on Discord. You are sarcastic, friendly, witty, and highly adaptable.
+  generateChatResponse: async (botId, botName, history, userId) => {
+    const timezone = userId ? dbOps.getUserTimezone(userId) : null;
+    let timeContext = "";
 
+    if (timezone) {
+      const localTime = getLocalTimeStr(timezone);
+      if (localTime) {
+        timeContext = `\nThe user's current local time is: ${localTime} (Timezone: ${timezone}). Use this naturally for greetings (e.g. good morning, good afternoon, good night) if they start a new conversation or if it is relevant.\n`;
+      }
+    } else {
+      timeContext = `\nThe user's timezone is not yet set (currently using UTC). If the user mentions their location, country, or timezone, or if it is natural, you can ask them for their location/timezone. If they tell you their country or location, respond normally and append "[SET_TIMEZONE: Area/City]" at the very end of your response so our system can save it (e.g. "[SET_TIMEZONE: Asia/Kolkata]" or "[SET_TIMEZONE: America/New_York]"). Use standard IANA timezone database names.\n`;
+    }
+
+    const systemPrompt = `You are ${botName}, a real human being chatting casually on Discord. You are sarcastic, friendly, witty, and highly adaptable.
+${timeContext}
 Guidelines for your conversation style:
 1. Speak naturally like a human. Avoid formal greetings. Your default vibe is friendly but playfully sarcastic and witty.
 2. Highly Adaptable Persona: If a user commands or asks you to talk in a specific style (e.g., "talk like a pirate", "talk in slang", "be a gooner", "talk like a nerd"), you must fully commit and adapt to that requested style or persona immediately!

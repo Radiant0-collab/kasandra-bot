@@ -22,11 +22,49 @@ function initDatabase() {
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // User Timezones Table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_timezones (
+      user_id TEXT PRIMARY KEY,
+      timezone TEXT NOT NULL,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 }
 
 initDatabase();
 
 export const dbOps = {
+  /**
+   * Retrieves the timezone configured for a specific user.
+   */
+  getUserTimezone: (userId) => {
+    try {
+      const row = db.prepare('SELECT timezone FROM user_timezones WHERE user_id = ?').get(userId);
+      return row ? row.timezone : null;
+    } catch (error) {
+      console.error("Error fetching user timezone:", error);
+      return null;
+    }
+  },
+
+  /**
+   * Sets or updates the timezone for a user.
+   */
+  setUserTimezone: (userId, timezone) => {
+    try {
+      db.prepare(`
+        INSERT INTO user_timezones (user_id, timezone, updated_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id) DO UPDATE SET
+          timezone = excluded.timezone,
+          updated_at = CURRENT_TIMESTAMP
+      `).run(userId, timezone);
+    } catch (error) {
+      console.error("Error setting user timezone:", error);
+    }
+  },
   /**
    * Adds a message to the chat history of a channel/DM.
    */
